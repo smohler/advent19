@@ -9,7 +9,8 @@ class computer:
 
     def __init__(self, computer_name = 'IntcodeA', relative_base = 0, clock_Mode = 'RUN', print_Mode = True):
         self.Name = computer_name
-        self.relbase = relative_base
+
+        # debug settings for computer
         self.clock = computer.clockMode[clock_Mode.upper()]
         self.Print = print_Mode
 
@@ -22,6 +23,23 @@ class computer:
         self.VAL2 = 0
         self.STOR = 0
         self.STEP = 0
+        self.REL = relative_base
+
+    def __str__(self):
+        CurrentState ='NAME:{}\nINST:{}\nOPT:{}\nMODE1:{}\nMODE2:{}\nVAL1:{}\nVAL2:{}\nSTOR:{}\nSTEP:{}\nREL:{}\n'
+        n = self.Name
+        i = self.INSTRUCTION
+        o = self.OPTCODE
+        m1 = self.MODE1
+        m2 = self.MODE2
+        v1 = self.VAL1
+        v2 = self.VAL2
+        sr = self.STOR
+        sp = self.STEP
+        r = self.REL
+        return CurrentState.format(n,i,o,m1,m2,v1,v2,sr,sp,r)
+
+
     # Sub Routines for Computer Methods
     def assignModes(self, program, step):
         #read the first instruction to set the optcode and parameter mode
