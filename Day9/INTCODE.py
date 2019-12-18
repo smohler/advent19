@@ -7,12 +7,12 @@ class computer:
     modedefs = {0: 'P', 1: 'I', 2:'R'}
     clockMode = {'RUN':False, 'STEP':True}
 
-    def __init__(self, computer_name = 'IntcodeA', relative_base = 0, clock_Mode = 'RUN', print_Mode = False):
+    def __init__(self, computer_name = 'IntcodeA', relative_base = 0, clock_Mode = 'RUN', Print = False):
         self.Name = computer_name
 
         # debug settings for computer
         self.clock = computer.clockMode[clock_Mode.upper()]
-        self.Print = print_Mode
+        self.Print = Print
 
         # state of computer
         self.PROGRAM = []
@@ -20,8 +20,10 @@ class computer:
         self.OPTCODE = 0
         self.MODE1 = 'N/A'
         self.MODE2 = 'N/A'
+        self.MODE3 = 'N/A'
         self.VAL1 = 0
         self.VAL2 = 0
+        self.VAL3 = 0
         self.STOR = 0
         self.STEP = 0
         self.REL = relative_base
@@ -53,20 +55,24 @@ class computer:
         #put zero padding in instructions as not provied means 0
         program = self.PROGRAM
         STEP = self.STEP
-        READ = str(program[STEP]).rjust(4,'0')
+        READ = str(program[STEP]).rjust(5,'0')
         OPTCODE = computer.optcodes[int(READ[-2:])]
-        MODE1 = computer.modedefs[int(READ[1])]
-        MODE2 = computer.modedefs[int(READ[0])]
+        MODE1 = computer.modedefs[int(READ[2])]
+        MODE2 = computer.modedefs[int(READ[1])]
+        MODE3 = computer.modedefs[int(READ[0])]
         self.OPTCODE = OPTCODE
-        self.INSTRUCTION = str(program[STEP:STEP+4])
+        self.INSTRUCTION = program[STEP:STEP+4]
         self.MODE1 = MODE1
         self.MODE2 = MODE2
+        self.MODE3 = MODE3
 
     def assignValues(self):
         program = self.PROGRAM
         MODE1 = self.MODE1
         MODE2 = self.MODE2
+        MODE3 = self.MODE3
         STEP = self.STEP
+
         if MODE1 == 'P': 
             VAL1 = program[program[STEP+1]]  
         elif MODE1 == 'I': 
@@ -82,8 +88,17 @@ class computer:
         else: #MODE2 == 'RELBASE'
             RELBASE = self.REL
             VAL2 = program[RELBASE + program[STEP+2]]
+
+        if MODE3 == 'P':
+            VAL3 = program[STEP+3]
+        else:#MODE# == 'R'
+            RELBASE = self.REL
+            VAL3 = program[RELBASE + program[STEP+3]]
+
+
         self.VAL1 = VAL1
         self.VAL2 = VAL2
+        self.VAL3 = VAL3
 
     def assignMemory(self, SCALE = 10):
         program = self.PROGRAM
@@ -120,8 +135,8 @@ class computer:
             VAL = program[RELBASE + program[STEP+1]]
         self.VAL1 = VAL
    
-    def printMessage(self):
-        inst = self.INSTRUCTION
+    def printMessage(self, intlength = 4):
+        inst = self.INSTRUCTION[:intlength]
         opt = self.OPTCODE
         mode1 = self.MODE1
         mode2 = self.MODE2
@@ -158,8 +173,10 @@ class computer:
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
-        STOR = program[STEP+3]
+        VAL3 = self.VAL3
+        STOR = VAL3
         program[STOR] = VAL1+VAL2
+        if self.Print: self.printMessage()
         self.STOR = STOR
         self.STEP = STEP + 4
         self.PROGRAM = program 
@@ -170,8 +187,10 @@ class computer:
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
-        STOR = program[STEP+3]
+        VAL3 = self.VAL3
+        STOR = VAL3
         program[STOR] = VAL1*VAL2
+        if self.Print: self.printMessage()
         self.STOR = STOR
         self.STEP = STEP + 4
         self.PROGRAM = program
@@ -180,17 +199,39 @@ class computer:
         program = self.PROGRAM  
         In = self.In #input address pointer
         STEP = self.STEP
+        MODE1 = self.MODE1
         # Assign Input to Only Parameter <- Find Input in Memory using In
-        program[STEP + 1] = program[In]
+        if MODE1 == 'P':
+            program[program[STEP + 1]] = program[In]
+        elif MODE1 == 'R':
+            RELBASE = self.REL
+            program[RELBASE + program[STEP + 1]] = program[In]
+        else: #MODE1 = 'I' Not Supposed to Happen
+            program[STEP + 1] = program[In]
+
+        if self.Print: self.printMessage(2)
         self.STEP = STEP + 2
         self.In = In + 1 #step forward to next input in stack
         self.PROGRAM = program 
 
     def Output(self):
-        self.assignValue() 
+        """Parameters that an instruction writes to will never be in immediate mode."""
+        program = self.PROGRAM
         STEP = self.STEP
-        VAL = self.VAL1
-        self.assignOutput(VAL) # PROGRAM and OUT changed in assignOutput
+        MODE1 = self.MODE1
+
+        #override the mode check for output
+        if MODE1 == 'P':
+            #write to the address of you parameter. This is why it can't be immediate
+            output = program[program[STEP + 1]]
+        elif MODE1 == 'R':
+            RELBASE = self.REL  
+            output = program[RELBASE + program[STEP+1]]
+        else:#MODE1 == 'I'
+            output = program[STEP+1]
+        self.assignOutput(output)
+        if self.Print: self.printMessage(2)
+        self.PROGRAM = program
         self.STEP = STEP + 2
 
     def JumpTrue(self):
@@ -198,7 +239,7 @@ class computer:
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
-
+        if self.Print: self.printMessage(3)
         if VAL1 != 0:
             self.STEP = VAL2
         else:
@@ -209,6 +250,8 @@ class computer:
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
+
+        if self.Print: self.printMessage(3)
         if VAL1 == 0:
             self.STEP = VAL2
         else:
@@ -220,37 +263,42 @@ class computer:
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
-        STOR = program[STEP+3]
+        VAL3 = self.VAL3
+        STOR = VAL3
         if VAL1 < VAL2: 
             program[STOR] = 1
         else:
             program[STOR] = 0 
-        STEP = STEP + 4
         self.STOR = STOR
-        self.STEP = STEP
+        if self.Print: self.printMessage()
+        self.STEP = STEP + 4
         self.PROGRAM = program  
 
     def Equals(self):
         self.assignValues()
         VAL1 = self.VAL1
         VAL2 = self.VAL2
+        VAL3 = self.VAL3
         program  = self.PROGRAM
         STEP = self.STEP
-        STOR = program[STEP+3]
+        STOR = VAL3
         if VAL1 == VAL2: 
             program[STOR] = 1
         else:
             program[STOR] = 0   
-        STEP = STEP + 4
         self.STOR = STOR
-        self.STEP = STEP
+        if self.Print: self.printMessage()
+        self.STEP = STEP + 4
         self.PROGRAM = program
 
     def AdjustBase(self):
+        self.assignValue()
         STEP = self.STEP
         REL = self.REL
+        VAL = self.VAL1
         program = self.PROGRAM
-        self.REL = REL + program[STEP + 1]
+        if self.Print: self.printMessage(2)
+        self.REL = REL + VAL
         self.STEP = STEP + 2
         self.PROGRAM = program
 
@@ -267,8 +315,10 @@ class computer:
         self.OPTCODE = 0
         self.MODE1 = 'N/A'
         self.MODE2 = 'N/A'
+        self.MODE3 = 'N/A'
         self.VAL1 = 0
         self.VAL2 = 0
+        self.VAL3 = 0
         self.STOR = 0
         self.STEP = 0
         self.REL = 0
@@ -279,14 +329,15 @@ class computer:
 
     def RunProgram(self):
         clockMode = self.clock
-        printMode = self.Print
         Halting = self.HALT
         self.assignModes()
         while not Halting:
             #step thru each clock cycle to debug
-            if clockMode: input('Press any key to step forward...')
-            if printMode: self.printMessage()
-
+            if clockMode: 
+                user = input('Any key step forward...q to quit')
+                if user == 'q':
+                    return
+        
             # Check OPTCODES and Run Functions accordingly 
             
             OPTCODE = self.OPTCODE
