@@ -7,3 +7,4 @@ example3 = [104,1125899906842624,99]
 # Example 1 Test
 intcode.LoadProgram(example1)
 output = intcode.RunProgram()
+print(output == example1)

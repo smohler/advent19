@@ -111,9 +111,9 @@ class computer:
         MODE1 = self.MODE1
         program = self.PROGRAM
         STEP = self.STEP
-        if MODE1 == 'POSITIONAL': 
+        if MODE1 == 'P': 
             VAL = program[program[STEP+1]]  
-        elif MODE1 == 'IMMEDIATE': 
+        elif MODE1 == 'I': 
             VAL = program[STEP+1]
         else: #MODE1 == 'RELBASE'
             RELBASE = self.REL
@@ -255,6 +255,7 @@ class computer:
         self.PROGRAM = program
 
     def LoadProgram(self, program, INPUT = [0]):
+        self.resetState()
         self.PROGRAM = program
         self.assignMemory()
         self.assignInput(INPUT)  
@@ -310,10 +311,9 @@ class computer:
             if OPTCODE == 'HALT':#99
                 Halting = True
                 program = self.PROGRAM
-                output = program[self.Out + 1:-1]
+                output = program[self.Out + 1:]
                 print(output)
-                output.reverse()
-                
+                output.reverse() 
             #end OPTCODE Checks
             self.assignModes()
         return output
