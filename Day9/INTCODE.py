@@ -31,7 +31,7 @@ class computer:
         self.In = 0
 
     def __str__(self):
-        CurrentState ='NAME:{}\nINST:{}\nOPT:{}\nMODE1:{}\nMODE2:{}\nVAL1:{}\nVAL2:{}\nSTOR:{}\nSTEP:{}\nREL:{}\nHALT:{}'
+        CurrentState ='NAME:{}\nINST:{}\nOPT:{}\nMODE1:{}\nMODE2:{}\nVAL1:{}\nVAL2:{}\nSTOR:{}\nSTEP:{}\nREL:{}\nHALT:{}\nPROGRAM:{}'
         n = self.Name
         i = self.INSTRUCTION
         o = self.OPTCODE
@@ -43,7 +43,8 @@ class computer:
         sp = self.STEP
         r = self.REL
         h = self.HALT
-        return CurrentState.format(n,i,o,m1,m2,v1,v2,sr,sp,r,h)
+        p = self.PROGRAM
+        return CurrentState.format(n,i,o,m1,m2,v1,v2,sr,sp,r,h, p)
 
 
     # Sub Routines for Computer Methods
@@ -84,7 +85,7 @@ class computer:
         self.VAL1 = VAL1
         self.VAL2 = VAL2
 
-    def assignMemory(self, SCALE = 5):
+    def assignMemory(self, SCALE = 10):
         program = self.PROGRAM
         programSize = len(program)
         memory = [0 for i in range(SCALE*programSize)]
@@ -129,7 +130,7 @@ class computer:
         store = self.STOR
         rel = self.REL
         step = self.STEP
-        mesg = "INST:{0:10}   OPT:{1:10}   PARAMS:({2:2},{3:2})   VALUES:({4:3},{5:3})   STORE:{6:3}   RELBASE:{7:3}   STEP:{8:3}"
+        mesg = "INST:{0}   \tOPT:{1:10}   PARAMS:({2:1},{3:1})   VALUES:({4:3},{5:3})   STORE:{6:3}   RELBASE:{7:3}   STEP:{8:3}"
         print(mesg.format(inst, opt, mode1, mode2, val1, val2, store, rel, step))
     
     def getState(self):
@@ -253,20 +254,40 @@ class computer:
         self.STEP = STEP + 2
         self.PROGRAM = program
 
-    def LoadProgram(self, program, INPUT):
+    def LoadProgram(self, program, INPUT = [0]):
         self.PROGRAM = program
         self.assignMemory()
         self.assignInput(INPUT)  
 
+    def resetState(self):
+        # state of computer
+        self.PROGRAM = []
+        self.INSTRUCTION = '0000'
+        self.OPTCODE = 0
+        self.MODE1 = 'N/A'
+        self.MODE2 = 'N/A'
+        self.VAL1 = 0
+        self.VAL2 = 0
+        self.STOR = 0
+        self.STEP = 0
+        self.REL = 0
+        self.HALT = False
+        #state of input and output pointers
+        self.Out = -1
+        self.In = 0
+
     def RunProgram(self):
         clockMode = self.clock
+        printMode = self.Print
         Halting = self.HALT
+        self.assignModes()
         while not Halting:
             #step thru each clock cycle to debug
             if clockMode: input('Press any key to step forward...')
+            if printMode: self.printMessage()
 
             # Check OPTCODES and Run Functions accordingly 
-            self.assignModes()
+            
             OPTCODE = self.OPTCODE
             if OPTCODE == 'ADD':#1
                 self.add()
@@ -287,10 +308,13 @@ class computer:
             if OPTCODE == 'RELBASE':#9
                 self.AdjustBase()
             if OPTCODE == 'HALT':#99
-                self.Halt = True
-                break
+                Halting = True
+                program = self.PROGRAM
+                output = program[self.Out + 1:-1]
+                print(output)
+                output.reverse()
+                
             #end OPTCODE Checks
-            if self.Print: self.printMessage()
-        #end while loop
-        program = self.PROGRAM
-        return program[-1:self.Out].reverse()
+            self.assignModes()
+        return output
+        #end while loop 
