@@ -26,7 +26,7 @@ class computer:
         self.VAL3 = 0
         self.STOR = 0
         self.STEP = 0
-        self.REL = relative_base
+        self.REL = 0
         self.HALT = False
         #state of input and output pointers
         self.Out = -1
@@ -91,16 +91,17 @@ class computer:
 
         if MODE3 == 'P':
             VAL3 = program[STEP+3]
+        elif MODE3 == 'I':
+            VAL3 = program[program[STEP+3]]
         else:#MODE# == 'R'
             RELBASE = self.REL
             VAL3 = program[RELBASE + program[STEP+3]]
-
 
         self.VAL1 = VAL1
         self.VAL2 = VAL2
         self.VAL3 = VAL3
 
-    def assignMemory(self, SCALE = 10):
+    def assignMemory(self, SCALE = 50):
         program = self.PROGRAM
         programSize = len(program)
         memory = [0 for i in range(SCALE*programSize)]
@@ -136,17 +137,19 @@ class computer:
         self.VAL1 = VAL
    
     def printMessage(self, intlength = 4):
-        inst = self.INSTRUCTION[:intlength]
+        inst = str(self.INSTRUCTION[:intlength])
         opt = self.OPTCODE
         mode1 = self.MODE1
         mode2 = self.MODE2
+        mode3 = self.MODE3
         val1 = self.VAL1
         val2 = self.VAL2
+        val3 = self.VAL3
         store = self.STOR
         rel = self.REL
         step = self.STEP
-        mesg = "INST:{0}   \tOPT:{1:10}   PARAMS:({2:1},{3:1})   VALUES:({4:3},{5:3})   STORE:{6:3}   RELBASE:{7:3}   STEP:{8:3}"
-        print(mesg.format(inst, opt, mode1, mode2, val1, val2, store, rel, step))
+        mesg = "INST:{0:20}   OPT:{1:10}   PARAMS:({2:1},{3:1},{4:1})   VALUES:({5:3},{6:3},{7:3})   \tSTORE:{8:3}   RELBASE:{9:3}   STEP:{10:3}"
+        print(mesg.format(inst, opt, mode1, mode2, mode3, val1, val2, val3, store, rel, step))
     
     def getState(self):
         """Debug function to pause and get the current state of the computer
@@ -168,30 +171,30 @@ class computer:
 
     # Main Computer Functions
     def add(self):
-        self.assignValues()
         program = self.PROGRAM
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
-        STOR = VAL3
-        program[STOR] = VAL1+VAL2
+        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
+        program[VAL3] = VAL1+VAL2
+        
+        self.STOR = VAL3
         if self.Print: self.printMessage()
-        self.STOR = STOR
         self.STEP = STEP + 4
         self.PROGRAM = program 
     
     def mult(self):
-        self.assignValues()
         program = self.PROGRAM
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
-        STOR = VAL3
-        program[STOR] = VAL1*VAL2
+        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
+        program[VAL3] = VAL1*VAL2
+
+        self.STOR = VAL3
         if self.Print: self.printMessage()
-        self.STOR = STOR
         self.STEP = STEP + 4
         self.PROGRAM = program
 
@@ -235,7 +238,6 @@ class computer:
         self.STEP = STEP + 2
 
     def JumpTrue(self):
-        self.assignValues()
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
@@ -246,7 +248,6 @@ class computer:
             self.STEP = STEP + 3
 
     def JumpFalse(self):
-        self.assignValues()
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
@@ -258,12 +259,12 @@ class computer:
             self.STEP = STEP + 3
 
     def LessThan(self):
-        self.assignValues()
         program = self.PROGRAM
         STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
+        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
         STOR = VAL3
         if VAL1 < VAL2: 
             program[STOR] = 1
@@ -275,10 +276,12 @@ class computer:
         self.PROGRAM = program  
 
     def Equals(self):
-        self.assignValues()
+        program = self.PROGRAM
+        STEP = self.STEP
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
+        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
         program  = self.PROGRAM
         STEP = self.STEP
         STOR = VAL3
@@ -292,11 +295,19 @@ class computer:
         self.PROGRAM = program
 
     def AdjustBase(self):
-        self.assignValue()
+        program = self.PROGRAM
         STEP = self.STEP
         REL = self.REL
-        VAL = self.VAL1
-        program = self.PROGRAM
+        MODE1 = self.MODE1
+
+        if MODE1 == 'P':
+            VAL = program[program[STEP+1]]
+        elif MODE1 == 'I':
+            RELBASE = self.REL
+            VAL = program[STEP+1]
+        else: #MODE1 == 'R'
+            RELBASE = self.REL
+            VAL = program[RELBASE + program[STEP+1]]
         if self.Print: self.printMessage(2)
         self.REL = REL + VAL
         self.STEP = STEP + 2
@@ -331,6 +342,7 @@ class computer:
         clockMode = self.clock
         Halting = self.HALT
         self.assignModes()
+        self.assignValues()
         while not Halting:
             #step thru each clock cycle to debug
             if clockMode: 
@@ -367,5 +379,6 @@ class computer:
                 output.reverse() 
             #end OPTCODE Checks
             self.assignModes()
+            self.assignValues()
         return output
         #end while loop 
