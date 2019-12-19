@@ -48,7 +48,6 @@ class computer:
         p = self.PROGRAM
         return CurrentState.format(n,i,o,m1,m2,v1,v2,sr,sp,r,h, p)
 
-
     # Sub Routines for Computer Methods
     def assignModes(self):
         #read the first instruction to set the optcode and parameter mode
@@ -91,17 +90,15 @@ class computer:
 
         if MODE3 == 'P':
             VAL3 = program[STEP+3]
-        elif MODE3 == 'I':
-            VAL3 = program[program[STEP+3]]
         else:#MODE# == 'R'
             RELBASE = self.REL
-            VAL3 = program[RELBASE + program[STEP+3]]
+            VAL3 = RELBASE + program[STEP+3]
 
         self.VAL1 = VAL1
         self.VAL2 = VAL2
         self.VAL3 = VAL3
 
-    def assignMemory(self, SCALE = 50):
+    def assignMemory(self, SCALE = 1000):
         program = self.PROGRAM
         programSize = len(program)
         memory = [0 for i in range(SCALE*programSize)]
@@ -122,19 +119,6 @@ class computer:
         program[Out] = OUTPUT
         self.PROGRAM = program 
         self.Out = Out - 1
-
-    def assignValue(self):
-        MODE1 = self.MODE1
-        program = self.PROGRAM
-        STEP = self.STEP
-        if MODE1 == 'P': 
-            VAL = program[program[STEP+1]]  
-        elif MODE1 == 'I': 
-            VAL = program[STEP+1]
-        else: #MODE1 == 'RELBASE'
-            RELBASE = self.REL
-            VAL = program[RELBASE + program[STEP+1]]
-        self.VAL1 = VAL
    
     def printMessage(self, intlength = 4):
         inst = str(self.INSTRUCTION[:intlength])
@@ -176,7 +160,7 @@ class computer:
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
-        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
+
         program[VAL3] = VAL1+VAL2
         
         self.STOR = VAL3
@@ -190,7 +174,7 @@ class computer:
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
-        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
+
         program[VAL3] = VAL1*VAL2
 
         self.STOR = VAL3
@@ -264,12 +248,12 @@ class computer:
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
-        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
+       
         STOR = VAL3
         if VAL1 < VAL2: 
-            program[STOR] = 1
+            program[VAL3] = 1
         else:
-            program[STOR] = 0 
+            program[VAL3] = 0 
         self.STOR = STOR
         if self.Print: self.printMessage()
         self.STEP = STEP + 4
@@ -281,15 +265,12 @@ class computer:
         VAL1 = self.VAL1
         VAL2 = self.VAL2
         VAL3 = self.VAL3
-        if self.MODE3 == 'R': VAL3 = self.REL + program[STEP+3]; self.VAL3 = VAL3
-        program  = self.PROGRAM
-        STEP = self.STEP
-        STOR = VAL3
+
         if VAL1 == VAL2: 
-            program[STOR] = 1
+            program[VAL3] = 1
         else:
-            program[STOR] = 0   
-        self.STOR = STOR
+            program[VAL3] = 0   
+        self.STOR = VAL3
         if self.Print: self.printMessage()
         self.STEP = STEP + 4
         self.PROGRAM = program
@@ -342,7 +323,7 @@ class computer:
         clockMode = self.clock
         Halting = self.HALT
         self.assignModes()
-        self.assignValues()
+
         while not Halting:
             #step thru each clock cycle to debug
             if clockMode: 
@@ -351,7 +332,7 @@ class computer:
                     return
         
             # Check OPTCODES and Run Functions accordingly 
-            
+            self.assignValues()
             OPTCODE = self.OPTCODE
             if OPTCODE == 'ADD':#1
                 self.add()
@@ -379,6 +360,6 @@ class computer:
                 output.reverse() 
             #end OPTCODE Checks
             self.assignModes()
-            self.assignValues()
+            
         return output
         #end while loop 
