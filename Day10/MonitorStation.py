@@ -3,65 +3,133 @@ import numpy as np
 from numpy import linalg as LA
 import math
 import itertools as IT
-def turnMatrix(rawdata):
+def makeMatrix(rawdata):
     data = open(rawdata, 'r').read().split('\n')
     Symbol = {'.':0, '#':1}
     Filter = lambda x: Symbol[x]
     matrix = np.matrix([(list(map(Filter, row))) for row in data]) 
     return matrix
 
-def COM(matrix):
-    mass = matrix.sum()
-    indxs = matrix.nonzero()
-    coord = (sum(indxs[0])/mass, sum(indxs[1])/mass)
-    return coord
-
-def coordinate(matrix):
+def coordinates(matrix):
     indxs = matrix.nonzero()
     coords = list(zip(indxs[0], indxs[1]))
     return coords
 
-def Colinear(o,u,v):
-    #the triangle inequality for vectors (o,u,v)
-    #o: origin point
-    #u: arbitrary point, v:arbitrary point
-    ox = o[0]; oy = o[1]
-    ux = u[0]; uy = u[1]
-    vx = v[0]; vy = v[1]
-    A = ox*(uy - vy) + ux*(vy - oy) + vx*(oy - uy)
-    return 1*(A == 0)
+def shiftOrigin(base, coordinates):
+    shiftedPoints = [(base[0]-point[0], point[1]-base[1]) for point in coordinates]
+    points = [x for x in shiftedPoints if (0,0) != shiftedPoints]
+    return points
 
-def TotalColinears(origin, otherpoints):
-    combs = list(IT.combinations(otherpoints, 2))
-    return [Colinear(origin, comb[0], comb[1]) for comb in combs]
+def rankStation(coordinates):
+    # assumes coordinates have been shifted
+    angle = lambda x: math.atan2(x[1],x[0])
+    dist = lambda x: abs(x[1]) + abs(x[0])
+    allAngles = list(map(angle, coordinates))
+    allDists = list(map(dist, coordinates))
+    points = zip(allAngles, allDists, coordinates)
+    Dict = {}
+    for angle, dist, coord in points:
+        key = angle
+        Dict.setdefault(key,[]).append((dist, coord))
+        Dict[key] = sorted(Dict[key])
+    return len(Dict), sorted(Dict.items())
 
-def TotalTriangle(otherpoints):
-    combs = list(IT.combinations(otherpoints, 2))
-    return [TriangleCheck(comb[0], comb[1]) for comb in combs]
+def bestStation(coordinates):
+    stations = []
+    for coord in coordinates:
+        base = coord
+        others = shiftOrigin(base, coordinates)
+        uniques,_  = rankStation(others)
+        stations.append((uniques, base))
+    return sorted(stations)
 
-def TriangleCheck(p1, p2):
-    #use the triangle inequality to determine if two points are on a line relative to the origin
-    norm = lambda x: math.sqrt(x[0]**2 + x[1]**2)
-    vadd = lambda x, y: (x[0] + y[0], x[1] + y[1])
-    return norm(vadd(p1, p2)) == norm(p1) + norm(p2)
-
-def shiftOrigin(origin, otherpoints):
-    shiftedPoints = [(point[0] - origin[0], point[1] - origin[1]) for point in otherpoints]
-    return shiftedPoints
-
-def allMonitors(coordinates):
-    allAsteroids = coordinates
-    Colinears = []
-    for anAsteroid in allAsteroids:
-        otherAsteroids = [x for x in allAsteroids if x != anAsteroid]
-        shiftedAsteroids = shiftOrigin(anAsteroid, otherAsteroids)
-        T = TotalTriangle(shiftedAsteroids)
-        Colinears.append(sum(T))
-    zeros = [i for i, p  in enumerate(Colinears) if p == min(Colinears)]
-    bestAsteroids = [allAsteroids[i] for i in zeros]
-    #reverse entries to match problem set up. 
-    flip = lambda x: x[::-1]
-    bestAsteroids = list(map(flip, bestAsteroids))
-    return (bestAsteroids, len(Colinears) - min(Colinears))
+        
 
 #best canditates are ones that at least have no colinear points.
+
+def OrderAsteroids(base, asteroids):
+    angle = lambda x: math.atan2(x[1],x[0])
+    shiftedAsteroids = sorted(shiftOrigin(base, asteroids), key = angle)
+    thetas = list(map(angle, shiftedAsteroids))
+    start = thetas.index(min(list(filter(lambda x: x>=0, thetas))))
+    thetas = thetas[start:] + thetas[:start]
+    shiftedAsteroids = shiftedAsteroids[start:] + shiftedAsteroids[:start]
+    pairs = list(zip(thetas, shiftedAsteroids))
+    return pairs, thetas
+
+def reorder(targets):
+    # reoder targets after rotation (a, (x,y))
+    angle = lambda x: math.atan2(x[1][1],x[1][0])
+    thetas = list(map(angle, targets))
+    start = targets.index(min(list(filter(lambda x: x[0]>=0, targets))))
+    thetas = thetas[start:] + thetas[:start]
+    targets = targets[start:] + targets[:start]
+    return targets
+
+def BlastEm(asteroids, startingpoint = 0, debug = False):
+    #compare (a, (x,y)) and (a,(u,v))
+    sameAngle = lambda x, y: (x[0]-y[0])**2<1e-8 and x[1] != y[1]
+    samePoint = lambda x, y: (x[0]-y[0])**2<1e-8 and x[1] == y[1]
+    dist = lambda x: x[0]**2 + x[1]**2
+    closer = lambda x, y: x if dist(x[1])<=dist(y[1]) else y
+    rotation = lambda x,y: True if x[0]<0 and y[0]>=0 else False
+
+    shotlist = []
+    total = len(asteroids)
+    k = startingpoint
+    aim = asteroids[k]
+    nextaim = asteroids[k+1]
+    targets = asteroids
+    point = 1
+    message = "aim:{}  target:{}  k:{}  total:{}"
+    while total > 0:
+        
+        if debug: 
+            print(message.format(aim, nextaim, point, total))
+        
+        if rotation(aim, nextaim):
+            if debug: print("Rotation")
+            targets = reorder(targets)
+
+        if total == 1: #last one!
+            print('Shooting Last One:{}'.format(aim))
+            targets = sorted(targets)
+            shotlist = shotlist + targets
+            total = 0
+
+        elif sameAngle(aim, nextaim):
+            print('Same Angles')
+            #aim at the closest one
+            aim = closer(aim, nextaim)
+            point = (targets.index(nextaim) + 1)%total
+            nextaim = targets[point]
+
+        elif samePoint(aim, nextaim):
+            print('Same Point!')
+            point = (targets.index(nextaim) + 1)%total
+            nextaim = targets[point]  
+            shotlist.append(aim)
+            targets.remove(aim)
+            total = len(targets)         
+
+        else: #blast em
+            print('Shooting:{}'.format(aim))
+            shotlist.append(aim)
+            targets.remove(aim)
+            total = len(targets)
+            aim = nextaim
+            point = (targets.index(aim) + 1)%total
+            nextaim = targets[point]
+
+        
+    return shotlist
+
+def TransformList(shotlist, base):
+    getBack = lambda p: (p[1][1]+base[1], base[0]-p[1][0])
+    Shotlist = list(map(getBack, shotlist))
+    return Shotlist
+   
+def Solution(shotlist, index):
+    ans = lambda x: x[0]*100 + x[1]
+    winningShot = shotlist[index]
+    return ans(winningShot)
