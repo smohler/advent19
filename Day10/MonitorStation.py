@@ -16,8 +16,9 @@ def coordinates(matrix):
     return coords
 
 def shiftOrigin(base, coordinates):
-    shiftedPoints = [(base[0]-point[0], point[1]-base[1]) for point in coordinates]
-    points = [x for x in shiftedPoints if (0,0) != shiftedPoints]
+    points = coordinates
+    points = [(base[0]-point[0], point[1]-base[1]) for point in points]
+    points.remove((0,0))
     return points
 
 def rankStation(coordinates):
@@ -32,20 +33,36 @@ def rankStation(coordinates):
         key = angle
         Dict.setdefault(key,[]).append((dist, coord))
         Dict[key] = sorted(Dict[key])
-    return len(Dict), sorted(Dict.items())
+    return len(Dict), Dict
 
 def bestStation(coordinates):
     stations = []
     for coord in coordinates:
         base = coord
         others = shiftOrigin(base, coordinates)
-        uniques,_  = rankStation(others)
+        uniques, _  = rankStation(others)
         stations.append((uniques, base))
     return sorted(stations)
 
-        
+def dictBlast(totalAngles, dictionary, coordinates, base):
+    D = dictionary
+    totalAsteroids = len(coordinates)
+    angles = sorted(D.keys())
+    start = angles.index(min(list(filter(lambda x: x>=0, angles))))
+    angles = angles[start:] + angles[:start]
+    k = 0; shot = 0
+    shotlist = []
+    while shot<totalAsteroids:
+        if not D[angles[k]]:# there are not values for this key
+            k = (k+1)%totalAngles
+        else:
+            _,bang = D[angles[k]].pop(0)
+            shotlist.append(bang)
+            k = (k+1)%totalAngles
+            shot = shot + 1
+    back = lambda x: (x[1]+base[1],base[0]-x[0])
+    return list(map(back,shotlist))
 
-#best canditates are ones that at least have no colinear points.
 
 def OrderAsteroids(base, asteroids):
     angle = lambda x: math.atan2(x[1],x[0])
