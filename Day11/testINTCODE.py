@@ -94,8 +94,15 @@ example10= [109, 1, 203, 2, 204, 2, 99] #outputs the input
 
 # Example 1 Test
 C.LoadProgram(example1)
-o = C.RunProgram()
-print('Test is {}. Asserted {}: Output {}'.format(str(o == example1), example1, o))
+C.Print = False
+O = []
+halt = False
+while halt == False:
+    o = C.RunProgram()
+    O.append(o)
+    halt = C.HALT
+O.pop()
+print('Test is {}. Asserted {}: Output {}'.format(str(O == example1), example1, O))
 
 
 # Example 3 Test
@@ -147,9 +154,38 @@ C.LoadProgram(example10, i)
 o = C.RunProgram()
 print('Test is {}. Asserted {}: Output {}'.format(str(o == i), i, o))
 
+# Day 9 Verify
+i = 1
+a = 4080871669
+data = open('day9.txt').read().split(',')
+program = list(map(int, data))
+C.LoadProgram(program, i)
+o = C.RunProgram()
+print('Test is {}. Asserted {}: Output {}'.format(str(o == a), a, o))
 
+# Day 5 Verify
+i = 1
+a = 6745903
+data = open('day5.txt').read().split(',')
+program = list(map(int, data))
+C.LoadProgram(program, i)
+halt = False
+O = []
+while halt == False:
+    o = C.RunProgram()
+    O.append(o)
+    halt = C.HALT
+o = O[-2]
+print('Test is {}. Asserted {}: Output {}'.format(str(o == a), a, o))
 
-
+# Day 5 Verify
+i = 5
+a = 9168267
+data = open('day5.txt').read().split(',')
+program = list(map(int, data))
+C.LoadProgram(program, i)
+o = C.RunProgram()
+print('Test is {}. Asserted {}: Output {}'.format(str(o == a), a, o))
 
 
 

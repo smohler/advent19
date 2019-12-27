@@ -71,7 +71,7 @@ class computer:
         MODE3 = self.MODE3
         STEP = self.STEP
 
-    def assignMemory(self, SCALE = 50):
+    def assignMemory(self, SCALE = 100):
         program = self.PROGRAM
         self.programSize = len(program)
         memory = [0 for i in range(SCALE*self.programSize)]
@@ -199,30 +199,19 @@ class computer:
         if self.Print: self.printMessage(2)
         self.STEP = STEP + 2
         self.PROGRAM = program 
-
+        
     def Output(self):
         """Parameters that an instruction writes to will never be in immediate mode."""
         program = self.PROGRAM
         STEP = self.STEP
         MODE1 = self.MODE1
         VAL1 = self.assignValue(MODE1, STEP+1, program)
-
-
-        #override the mode check for output
-        if MODE1 == 'P':
-            #write to the address of you parameter. This is why it can't be immediate
-            output = VAL1
-        elif MODE1 == 'R':
-            output = VAL1
-        else:#MODE1 == 'I'
-            output = VAL1
-
-        self.assignOutput(output)
         if self.Print: self.printMessage(2)
         self.STOR = VAL1
         self.PROGRAM = program
         self.STEP = STEP + 2
-        return output
+        self.Out = VAL1
+        return VAL1
 
     def JumpTrue(self):
         STEP = self.STEP
@@ -365,9 +354,10 @@ class computer:
             if OPTCODE == 'RELBASE':#9
                 self.AdjustBase()
             if OPTCODE == 'HALT':#99
+                print('HALTING!!!!')
                 self.HALT = True
                 Halting = True
-                return 99
+                return self.Out
             #end OPTCODE Checks
             self.assignModes()
         #end while loop 
