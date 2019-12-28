@@ -86,13 +86,6 @@ class computer:
         program[-1] = INPUT
         self.PROGRAM = program 
 
-    def assignOutput(self, OUTPUT):
-        program = self.PROGRAM
-        Out = self.Out
-        program[Out] = OUTPUT
-        self.PROGRAM = program 
-        self.Out = Out + 1
-
     def assignValue(self, mode, step, program):
         #step should be the parameter's pointer
         if mode == 'P': 
